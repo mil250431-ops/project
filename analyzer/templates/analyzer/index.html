@@ -1,0 +1,68 @@
+{% extends 'analyzer/base.html' %}
+
+{% block title %}Цифровой книжный критик — Главная{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body p-5">
+                <h1 class="text-center mb-4" style="color: #4a5568;">
+                    <i class="fas fa-robot" style="color: #667eea;"></i> 
+                    Цифровой книжный критик
+                </h1>
+                <p class="text-center text-muted mb-4">
+                    Проанализируйте эмоциональную окраску и читабельность вашего текста
+                </p>
+                
+                <form method="POST" action="{% url 'analyze' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}" class="form-label fw-bold">
+                            {{ form.title.label }}
+                        </label>
+                        {{ form.title }}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="{{ form.text_content.id_for_label }}" class="form-label fw-bold">
+                            {{ form.text_content.label }}
+                        </label>
+                        {{ form.text_content }}
+                        {% if form.text_content.errors %}
+                            <div class="text-danger mt-1">{{ form.text_content.errors }}</div>
+                        {% endif %}
+                        <small class="text-muted">Текст будет проанализирован на предмет тональности и удобочитаемости</small>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg px-5">
+                            <i class="fas fa-chart-line"></i> Анализировать
+                        </button>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <i class="fas fa-smile fa-2x" style="color: #48bb78;"></i>
+                        <h6 class="mt-2">Анализ тональности</h6>
+                        <small class="text-muted">Определяем эмоции в каждом абзаце</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-chart-bar fa-2x" style="color: #667eea;"></i>
+                        <h6 class="mt-2">График настроения</h6>
+                        <small class="text-muted">Визуализация эмоциональной дуги</small>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-book fa-2x" style="color: #764ba2;"></i>
+                        <h6 class="mt-2">Читабельность</h6>
+                        <small class="text-muted">Индекс удобочитаемости текста</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

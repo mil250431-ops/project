@@ -1,0 +1,251 @@
+{% extends 'analyzer/base.html' %}
+
+{% block title %}Результаты анализа — {{ text_sample.title }}{% endblock %}
+
+{% block content %}
+
+<!-- Заголовок -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1" style="color: #4a5568;">
+                        <i class="fas fa-file-alt" style="color: #667eea;"></i> 
+                        {{ text_sample.title }}
+                    </h2>
+                    <small class="text-muted">
+                        <i class="far fa-calendar-alt"></i> 
+                        {{ text_sample.created_at|date:"d.m.Y H:i" }}
+                    </small>
+                </div>
+                <a href="{% url 'index' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Новый анализ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card p-3 text-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+            <h3 style="color: #667eea;">{{ lexical.word_count }}</h3>
+            <small class="text-muted">Всего слов</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card p-3 text-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+            <h3 style="color: #764ba2;">{{ lexical.unique_words }}</h3>
+            <small class="text-muted">Уникальных слов</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card p-3 text-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+            <h3 style="color: #48bb78;">{{ lexical.flesch_reading_ease }}</h3>
+            <small class="text-muted">Индекс Флеша</small>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card p-3 text-center" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+            <h3 style="color: #ed8936;">{{ sentiments.count }}</h3>
+            <small class="text-muted">Абзацев</small>
+        </div>
+    </div>
+</div>
+
+<!-- Читабельность -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4">
+            <h5><i class="fas fa-graduation-cap"></i> Удобочитаемость</h5>
+            <div class="alert alert-{{ flesch_color }} mt-3">
+                <strong>{{ flesch_interpretation }}</strong>
+            </div>
+            <small class="text-muted">Индекс Флеша-Кинкейда: 0-30 — очень сложно, 60-70 — средне, 90-100 — очень легко</small>
+        </div>
+    </div>
+</div>
+
+<!-- График эмоциональной дуги -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4">
+            <h5><i class="fas fa-chart-line"></i> Эмоциональная дуга текста</h5>
+            <div id="sentimentChart" style="height: 400px;"></div>
+            <small class="text-muted mt-2">Значения: +1 — позитив, -1 — негатив, 0 — нейтрально</small>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица тональности по абзацам -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4">
+            <h5><i class="fas fa-list"></i> Детальный анализ по абзацам</h5>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            <th>Текст</th>
+                            <th>😊 Позитив</th>
+                            <th>😐 Нейтр.</th>
+                            <th>😞 Негатив</th>
+                            <th>Итог</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in sentiments %}
+                        <tr>
+                            <td>{{ s.paragraph_index|add:1 }}</td>
+                            <td><small>{{ s.paragraph_text|truncatechars:100 }}</small></td>
+                            <td>{{ s.positive_score|floatformat:3 }}</td>
+                            <td>{{ s.neutral_score|floatformat:3 }}</td>
+                            <td>{{ s.negative_score|floatformat:3 }}</td>
+                            <td>
+                                {% if s.compound_score > 0.1 %}
+                                    <span class="badge bg-success">Позитив</span>
+                                {% elif s.compound_score < -0.1 %}
+                                    <span class="badge bg-danger">Негатив</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Нейтр.</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="6" class="text-center text-muted">Нет данных</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Облако слов -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card p-4">
+            <h5><i class="fas fa-cloud"></i> Частотные слова 
+                <small class="text-muted">(кликни на слово для подбора синонимов)</small>
+            </h5>
+            <div id="wordCloud" class="text-center p-3" style="min-height: 200px; line-height: 2.5;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Кнопка -->
+<div class="text-center mb-4">
+    <a href="{% url 'index' %}" class="btn btn-primary btn-lg px-5">
+        <i class="fas fa-plus"></i> Новый анализ
+    </a>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // График эмоциональной дуги
+    var chartData = JSON.parse('{{ chart_data|safe }}');
+    
+    var trace = {
+        x: chartData.paragraphs,
+        y: chartData.scores,
+        type: 'scatter',
+        mode: 'lines+markers',
+        name: 'Тональность',
+        line: { 
+            color: '#667eea', 
+            width: 3,
+            shape: 'spline'
+        },
+        marker: { 
+            size: 10,
+            color: chartData.scores.map(function(s) { return s >= 0 ? '#48bb78' : '#f56565'; })
+        },
+        text: chartData.texts,
+        hovertemplate: '<b>%{text}</b><br>Тональность: %{y:.3f}<extra></extra>'
+    };
+    
+    var layout = {
+        xaxis: { 
+            title: 'Номер абзаца',
+            dtick: 1
+        },
+        yaxis: { 
+            title: 'Тональность', 
+            range: [-1, 1],
+            zeroline: true,
+            zerolinecolor: '#a0aec0',
+            zerolinewidth: 1
+        },
+        hovermode: 'closest',
+        plot_bgcolor: 'rgba(0,0,0,0)',
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        margin: { t: 20, r: 20, b: 40, l: 50 }
+    };
+    
+    Plotly.newPlot('sentimentChart', [trace], layout, {responsive: true});
+    
+    // Облако слов
+    var wordcloudData = JSON.parse('{{ wordcloud_data|safe }}');
+    var container = document.getElementById('wordCloud');
+    
+    if (wordcloudData.length > 0) {
+        var maxWeight = Math.max.apply(null, wordcloudData.map(function(w) { return w.weight; }));
+        
+        wordcloudData.forEach(function(item) {
+            var span = document.createElement('span');
+            var fontSize = 14 + (item.weight / maxWeight) * 30;
+            var opacity = 0.5 + (item.weight / maxWeight) * 0.5;
+            
+            span.style.fontSize = fontSize + 'px';
+            span.style.opacity = opacity;
+            span.style.cursor = 'pointer';
+            span.style.display = 'inline-block';
+            span.style.margin = '5px 10px';
+            span.style.transition = 'all 0.3s';
+            span.textContent = item.word;
+            span.title = 'Частота: ' + item.weight;
+            
+            span.onmouseenter = function() {
+                this.style.transform = 'scale(1.2)';
+                this.style.color = '#667eea';
+            };
+            span.onmouseleave = function() {
+                this.style.transform = 'scale(1)';
+                this.style.color = '';
+            };
+            
+            span.onclick = function() {
+                var word = item.word;
+                fetch('/api/synonyms/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : ''
+                    },
+                    body: JSON.stringify({word: word})
+                })
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data.success && data.synonyms.length > 0) {
+                        alert('Синонимы к слову "' + word + '":\n' + data.synonyms.join(', '));
+                    } else {
+                        alert('Синонимы к слову "' + word + '" не найдены');
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Ошибка:', error);
+                });
+            };
+            
+            container.appendChild(span);
+        });
+    } else {
+        container.innerHTML = '<p class="text-muted">Недостаточно данных для облака слов</p>';
+    }
+</script>
+{% endblock %}
