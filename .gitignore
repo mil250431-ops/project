@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+.env
+db.sqlite3
+*.sqlite
+.vs/
+*.zip
+project.zip
+update.zip
